@@ -12,6 +12,7 @@ You must open each quest file and change the following line:
 ```
   if ( GetMemoCount(talker) < @MAX_QUEST_NUM )
 ```
+Change ```@MAX_QUEST_NUM``` to ```16```.
 
 ## Attention
 * The ```questdata``` folder must contain only questdata files. Do not add any other files.
