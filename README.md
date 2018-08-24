@@ -7,5 +7,5 @@ LineageII - Chronicle I - QuestData
 
 ```
   quest_end
-  
+  (blank line)
 ```
