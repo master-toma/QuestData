@@ -2,7 +2,7 @@
 LineageII - Chronicle I - QuestData
 
 ## Options
-In the file, manual_pch.txt, add the following variable:
+In the file, ```manual_pch.txt```, add the following variable:
 ```
   [MAX_QUEST_NUM] = 16
 ```
