@@ -1,6 +1,11 @@
 # QuestData
 LineageII - Chronicle I - QuestData
 
-## Info
-* Questdata folder must have ONLY quest files. Don't add another files.
-* On quest files, have always one blank line on documents end.
+## Attention!
+* The questdata folder must contain only questdata files. Do not add any other files.
+* At the end of each quest file, there must be a blank line.
+
+```
+  quest_end
+  
+```
