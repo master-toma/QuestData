@@ -23,6 +23,9 @@ Change ```@MAX_QUEST_NUM``` to ```16```.
   (blank line)
 ```
 
+## Progress
+* [Quest List](Quests)
+
 ## Authors
 * **Smeli**
 * **MimisK**
