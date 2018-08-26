@@ -1,0 +1,527 @@
+////////////////////////////////////////////////////////////////////////////////////////////
+// CASTLE RATES
+////////////////////////////////////////////////////////////////////////////////////////////
+
+CastleTaxRates()
+[1*]
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// Quest Rates
+// aplies only to original rates, Gracia Finall addons are unaffected
+////////////////////////////////////////////////////////////////////////////////////////////
+
+//quest item drop rate 1x
+Quest_DropRate(rate)
+[Rand(FloatToInt(rate/1))]
+//[Rand(FloatToInt(rate/(1*((c1.is_pc * c1.meal)+1))))]
+
+//adena reward 1x one time quests
+Quest_RewardRate_OneTime()
+[1*(talker.meal + 1)*]
+
+//exp reward 1x
+Quest_RewardRate_OneTimeEXP()
+[1*]
+Quest_RewardRate_RepeatEXP()
+[1*]
+
+//sp reward 1x
+Quest_RewardRate_OneTimeSP()
+[1*]
+Quest_RewardRate_RepeatSP()
+[1*]
+
+//adena reward 1x repeated quests
+Quest_RewardRate_Repeat()
+[1*(talker.meal+1)*]
+
+//adena reward 1x repeated Wishing Potion Quest
+Quest_RewardRate_Repeat_Wish()
+[1*((c1.is_pc * c1.meal) +1)*]
+
+//coin reward 2x repeated Magic Coin Quest
+Quest_RewardRate_Repeat_Coin()
+[1*((c1.is_pc * c1.meal) +1)*]
+
+
+//1==1 enabled, 1==0 disabled
+gracia_rewards(kvest_id)
+[
+	if (1==0)
+]
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// IS NULL CHECKS
+////////////////////////////////////////////////////////////////////////////////////////////
+IsNullCreature(kreature)
+[
+	IsWaitingDismiss(kreature) == 1
+]
+
+IsNotNullCreature(kreature)
+[
+	IsWaitingDismiss(kreature) == 0
+]
+
+/////////////////////////////////////////////
+server_dll_check(kreature)
+[
+	if (kreature.m_bIsOnline == 0)
+		return;
+
+	if (kreature.alive == 0)
+		return;
+
+	if ((myself.sm.level > (kreature.level - 10)) && (kreature.m_nBuilderLevel != 1)) 
+	{
+		ShowSystemMessage(kreature,9996); //unmount from wyvern
+	}
+]
+
+server_dll_check_boss(kreature)
+[
+	if (kreature.m_bIsOnline == 0)
+		return;
+
+	if (kreature.alive == 0)
+		return;
+
+	ShowSystemMessage(kreature,9995); //unmount from wyvern
+]
+
+
+IsMyLord(kreature)
+[	
+	// OLD
+	// (IsMyLord(talker) || ((talker.m_bIsNPC_in_Clan & pledgeDoors) > 0) && (talker.m_nResidenceId == myself.sm.m_nResidenceId) )
+		
+	// NEW
+	(IsMyLord(talker) || ((talker.m_bIsNPC_in_Clan & pledgeDoors) > 0) && (talker.residence_id﻿ == myself.sm.residence_id﻿ ))
+]
+
+//used on q
+c1GetLastAttacker()
+[
+	c1 = GetLastAttacker();
+	if(c1 == myself.master)
+	{
+		return;
+	}
+	if( c1.master )
+	{
+		c1 = c1.master;
+	}
+]
+
+c1GetLastAttackerEx()
+[
+	c1 = GetLastAttacker();
+	if(c1 == myself.master)
+	{
+		return;
+	}
+
+	//make summons and pets use in quests
+	if( c1.master ) 
+	{
+		c1 = c1.master;
+	}
+
+	if(c1 == myself.master)
+	{
+		return;
+	}
+]
+
+GetMemoMyself0(mob1,questid1)
+[
+	myself.i_quest0
+]
+
+SetMemoMyself0(mob1,questid1,value1)
+[
+	myself.i_quest0 = value1;
+]
+
+GetMemoMyself2(mob1,questid1)
+[
+	myself.i_quest2
+]
+
+SetMemoMyself2(mob1,questid1,value1)
+[
+	myself.i_quest2 = value1;
+]
+
+//^   0 XOR 1 = 1,   0 XOR 0 = 0,  1 XOR 1 = 0.
+
+GetMemoStateEx(kreature, kvest, value1)
+[
+	((GetMemoState(kreature,@get_calculator)*(OwnItemCount(kreature,@q_calculator) == kvest)*value1) + (GetMemoState(kreature,kvest)*(value1 ^ 1)))
+]
+
+SetMemoStateEx(kreature, kvest, value1, value2)
+[
+	if (value1 == 1)
+	{
+		if ((HaveMemo(kreature,@get_calculator) ==1) && (OwnItemCount(kreature,@q_calculator) != kvest))
+		{
+			Say("Quest cannot be continued, cause another quest use the calculators");
+			return;
+		
+		} else if (HaveMemo(kreature,@get_calculator) ==0) {
+			
+			SetMemo(kreature, @get_calculator);
+			if (OwnItemCount(kreature, @q_calculator) > kvest)
+				DeleteItem1(kreature, @q_calculator, OwnItemCount(kreature, @q_calculator) - kvest);
+			else
+				GiveItem1(kreature, @q_calculator, kvest - OwnItemCount(kreature, @q_calculator)); 
+		}
+
+		SetMemoState(kreature, @get_calculator, value2);
+	
+	} else {
+		
+		SetMemoState(kreature, kvest, value2);
+	
+	}
+]
+
+RemoveMemoEx(kreature, kvest)
+[
+	if ((HaveMemo(kreature,@get_calculator) ==1) && (OwnItemCount(kreature,@q_calculator) == kvest))
+	{
+		RemoveMemo(kreature, @get_calculator);
+		DeleteItem1(kreature,@q_calculator, kvest);
+	} 
+]
+
+is_universal_enemy(target)
+[
+	(target.is_pc != 0) || IsInCategory(@summon_npc_group, target.npc_class_id)
+]
+
+use_skill_universal(target, skill_name_id, off_deff, stand_move, mydesire)
+[
+	{
+		if(skill_name_id >0)
+			if(Skill_GetConsumeMP(skill_name_id) < myself.sm.mp && Skill_GetConsumeHP(skill_name_id) < myself.sm.hp)
+				if(Skill_InReuseDelay(skill_name_id) == 0 )
+					AddUseSkillDesire(target, skill_name_id, off_deff, stand_move, mydesire);
+	}
+]
+
+use_skill_universal_wait(target, skill_name_id, off_deff, stand_move, mydesire)
+[
+	{
+		if(skill_name_id >0)
+		 if(Skill_GetConsumeMP(skill_name_id) < myself.sm.mp && Skill_GetConsumeHP(skill_name_id) < myself.sm.hp)
+		  if(Skill_InReuseDelay(skill_name_id) == 0 )
+			AddUseSkillDesire(target, skill_name_id, off_deff, stand_move, mydesire);
+		  else
+			AddTimerEx(1003,( 3 * 1000 ));
+	}
+]
+
+//// C2 Quest 
+//// TODO: This quest is not from C1
+// quest171_dying()
+// [		
+	// MACRO<c1GetLastAttacker>()
+	// c1 = GetLastAttacker();
+	// if( c1.master )
+	// {
+		// c1 = c1.master;
+	// }
+	
+	// if( ( ( HaveMemo(c1,@menacing_hordes) && ( GetMemoState(c1,@menacing_hordes) == 2 ) ) && ( OwnItemCount(c1,@q_blade_mold) < 20 ) ) )
+	// {
+		// i0 = MACRO<Quest_DropRate>(100);
+		// if( ( i0 < 9 ) )
+		// {
+			// GiveItem1(c1,@q_blade_mold,2);
+			// if( ( OwnItemCount(c1,@q_blade_mold) >= 19 ) )
+			// {
+				// SoundEffect(c1,"Itemsound.quest_middle");
+			// }
+			// else
+			// {
+				// SoundEffect(c1,"Itemsound.quest_itemget");
+			// }
+		// }
+		// else if( ( i0 < 53 ) )
+		// {
+			// GiveItem1(c1,@q_blade_mold,1);
+			// if( ( OwnItemCount(c1,@q_blade_mold) >= 19 ) )
+			// {
+				// SoundEffect(c1,"Itemsound.quest_middle");
+			// }
+			// else
+			// {
+				// SoundEffect(c1,"Itemsound.quest_itemget");
+			// }
+		// }
+		// i0 = OwnItemCount(c1,@q_blade_mold);
+		// if( (  i0== 5 ) || ( i0 == 6 ) )
+		// {
+			// CreateOnePrivateEx(@ol_mahum_support_troop,"ol_mahum_support_troop",0,0,FloatToInt(myself.sm.x),FloatToInt(myself.sm.y),FloatToInt(myself.sm.z),GetIndexFromCreature(c1),0,0);
+		// }
+		// if( ( i0 >= 10 ) )
+		// {
+			// if( ( Rand(100) <= 24 ) )
+			// {
+				// CreateOnePrivateEx(@ol_mahum_support_troop,"ol_mahum_support_troop",0,0,FloatToInt(myself.sm.x),FloatToInt(myself.sm.y),FloatToInt(myself.sm.z),GetIndexFromCreature(c1),0,0);
+			// }
+		// }
+	// }
+// ]
+
+
+is_house_master(c0)
+[
+	(1 == 1)
+]
+
+// influx_of_machines_d()
+// [
+	// c1 = GetLastAttacker();
+	// if( c1.master )
+	// {
+		// c1 = c1.master;
+	// }
+	// MACRO<IS_NOT_NULL>(c1)
+	// if ( HaveMemo(c1, @influx_of_machines)  && IsAlive(c1) && (DistFromMe( c1 ) <= 1500) ) 
+	// {
+		//Say("Oh, ah.... system shut down");
+		// c1.quest_last_reward_time = 0;
+		// if (OwnItemCount(c1,@destroyed_golem_shards) > 499)
+		// {
+			// GiveItem1(c1,@destroyed_golem_shards,1);
+			
+		// }
+		// else if(OwnItemCount(c1,@destroyed_golem_shards) < 499)
+		// {
+			// if( MACRO<Quest_DropRate>(100) < 30 )
+			// {
+				// c1.quest_last_reward_time = GetCurrentTick();
+				// SoundEffect(c1,"ItemSound.quest_itemget");
+				// GiveItem1(c1,@destroyed_golem_shards,1);
+			// }
+
+		// }
+		// else
+		// {
+			// GiveItem1(c1,@destroyed_golem_shards,1);
+			// SoundEffect(c1,"ItemSound.quest_middle");
+			// SetJournal(c1,@influx_of_machines,2);
+
+		// } 			
+	// }
+// ]
+
+// ice_merchant_dream_d()
+// [
+	// c1 = GetLastAttacker();
+	// if( c1.master )
+	// {
+		// c1 = c1.master;
+	// }
+	
+	// MACRO<IS_NOT_NULL>(c1)
+	// if ( HaveMemo(c1, @an_ice_merchant_dream)  && IsAlive(c1) && (DistFromMe( c1 ) <= 1500) ) 
+	// {
+		// c1.quest_last_reward_time = 0;
+		// if ( MACRO<Quest_DropRate>(100) < 35 )
+		// {
+			// GiveItem1(c1, @q_silver_ice_crystal, 1);
+			// SoundEffect(c1, "ItemSound.quest_itemget");
+		// }
+		
+		// if (GetMemoState(c1, @an_ice_merchant_dream)==2)
+		// {
+			// if ( MACRO<Quest_DropRate>(100) < 45 )
+			// {
+				// GiveItem1(c1, @q_silver_hemocyte, 1);
+			  // SoundEffect(c1, "ItemSound.quest_itemget");
+			// }
+		// }			
+	// }
+// ]
+
+// brigand_war_dying()
+// [
+	// c1 = GetLastAttacker();
+	// if( c1.master )
+	// {
+		// c1 = c1.master;
+	// }
+	// MACRO<IS_NOT_NULL>(c1)
+	// if ( HaveMemo(c1, @brigand_war)  && (GetMemoState(c1, @brigand_war) == 1) && IsAlive(c1) && (DistFromMe( c1 ) <= 1500) ) 
+	// {
+		// c1.quest_last_reward_time = 0;
+		// if ( MACRO<Quest_DropRate>(100) < 32 )
+		// {
+			// if ( OwnItemCount(c1, @thief_guild_s_mark) < 199 )
+			// {
+				// GiveItem1(c1, @thief_guild_s_mark, 1);
+				// SoundEffect(c1, "ItemSound.quest_itemget");
+			// }
+			// else 
+			// {
+				// GiveItem1(c1, @thief_guild_s_mark, 1);
+				// SoundEffect(c1, "ItemSound.quest_itemget");
+				// SetJournal(c1, @brigand_war, 2);
+				// SetMemoState(c1, @brigand_war, 2);
+			// }
+		// }		
+	// }
+// ]
+
+// q_distant_stars()
+// [
+
+	// MACRO<IS_NOT_NULL>(c1)
+	// if ( HaveMemo(c1, @ocean_of_distant_stars)  && (GetMemoState(c1, @ocean_of_distant_stars) == 7) && IsAlive(c1) && (DistFromMe( c1 ) <= 1500) ) 
+	// {
+		// c1.quest_last_reward_time = 0;
+		// if ( MACRO<Quest_DropRate>(100) < 22 )
+		// {
+			// GiveItem1(c1, @book_of_grey_star, 1);
+			// SoundEffect(c1, "ItemSound.quest_itemget");
+			// SetJournal(c1, @ocean_of_distant_stars, 8);
+			// SetMemoState(c1, @ocean_of_distant_stars, 8);
+		// }		
+	// }
+// ]
+
+
+is_gm(c0)
+[
+	(OwnItemCount(c0, 1303) > 0) || (c0.m_nBuilderLevel > 0 && c0.m_nBuilderLevel < 10 )
+]
+
+
+//------------------------------------
+//inventory full fix
+//-----------------------------------
+// 80%
+check_inventory()
+[
+	(((talker.occupation < 53)  &&  (talker.curslot > 70))  ||  ((talker.occupation >52) && (talker.occupation < 58) &&  (talker.curslot > 90))) 
+]
+
+inventory_full()
+[
+	//ShowPage(talker,"inventory_full.htm");
+	ShowSystemMessage(talker, 1118);
+]
+
+inventory_macro()
+[
+	if(( GetCurrentTick() - talker.quest_last_reward_time ) > 1 ) 
+	{
+		talker.quest_last_reward_time = GetCurrentTick();
+		
+	} else {
+		
+		return;	
+	}
+
+	if (((talker.occupation < 53)  &&  (talker.curslot > 70))  ||  ((talker.occupation >52) && (talker.occupation < 58) &&  (talker.curslot > 90))) 
+	{
+		ShowSystemMessage(talker, 1118);
+		return;
+	}
+]
+
+inventory_macro2(kreature)
+[
+	if(( GetCurrentTick() - kreature.quest_last_reward_time ) > 1 ) 
+	{
+		kreature.quest_last_reward_time = GetCurrentTick();
+	
+	} else {
+	
+		return;	
+	}
+
+	if (((kreature.occupation < 53)  &&  (kreature.curslot > 70))  ||  ((kreature.occupation >52) && (kreature.occupation < 58) &&  (kreature.curslot > 90))) 
+	{
+		ShowSystemMessage(kreature, 1118);
+		return;
+	}
+]
+
+GetInventoryInfo(kreature)
+[
+	if (((kreature.occupation < 53)  &&  (kreature.curslot > 70))  ||  ((kreature.occupation >52) && (kreature.occupation < 58) &&  (kreature.curslot > 90))) 
+	{
+		ShowSystemMessage(kreature, 1118);
+		return;
+	}
+]
+
+acceptquest_macro()
+[
+
+	if(( GetCurrentTick() - talker.quest_last_reward_time ) > 1 ) 
+	{
+		talker.quest_last_reward_time = GetCurrentTick();
+		
+	} else {
+		
+		return;
+	}
+
+	if (((talker.occupation < 53)  &&  (talker.curslot > 70))  ||  ((talker.occupation >52) && (talker.occupation < 58) &&  (talker.curslot > 90))) 
+	{
+		ShowSystemMessage(talker, 1118);
+		return;
+	}
+	
+	if(HaveMemo(talker, quest_id)==1)
+		return;
+
+	if(quest_id< 256)
+		if (GetOneTimeQuestFlag(talker, quest_id)==1)
+			return;
+
+	if ( GetMemoCount(talker) > 14 )
+		return;
+	
+]
+
+/* I think dosn't we need that
+acceptquest_macro2(kvest_id)
+[
+	//if (kvest_id == 0) {
+	//	ShowPage(talker,"null_quest001.htm");
+	//	return;
+	//}
+
+	if(( GetCurrentTick() - talker.quest_last_reward_time ) > 1 ) 
+	{
+		talker.quest_last_reward_time = GetCurrentTick();
+		
+	} else {
+		
+		return;
+	}
+
+	if (((talker.occupation < 53)  &&  (talker.curslot > 70))  ||  ((talker.occupation >52) && (talker.occupation < 58) &&  (talker.curslot > 90))) 
+	{
+		ShowSystemMessage(talker, 1118);
+		return;
+	}
+	
+	if(HaveMemo(talker, kvest_id)==1)
+		return;
+
+	if(kvest_id< 256)
+		if (GetOneTimeQuestFlag(talker, kvest_id)==1)
+			return;
+
+	if ( GetMemoCount(talker) > 14 )
+		return;
+]
+*/
