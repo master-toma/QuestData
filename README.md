@@ -24,7 +24,7 @@ Change ```@MAX_QUEST_NUM``` to ```16```.
 ```
 
 ## Progress
-* [Quest List](Quests)
+* [Quest List](https://github.com/MimisK13/QuestData/wiki/Quests)
 
 ## Authors
 * **Smeli**
