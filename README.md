@@ -29,3 +29,4 @@ Change ```@MAX_QUEST_NUM``` to ```16```.
 ## Authors
 * **Smeli**
 * **MimisK**
+* **Master Toma**
